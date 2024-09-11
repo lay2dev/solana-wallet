@@ -24,8 +24,6 @@ class Point implements IPoint {
     return new Point(x, y);
   }
 
-  // complies with EC and elliptic pub key types
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   encode(enc: string, params?: any): Buffer {
     switch (enc) {
       case "arr":

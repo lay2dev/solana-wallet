@@ -1,9 +1,6 @@
 <script setup lang="ts">
-import { MenuIcon } from "@toruslabs/vue-icons/basic";
 import { onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
-
-import { Button } from "@/components/common";
 
 const router = useRouter();
 
@@ -19,8 +16,6 @@ onMounted(() => {
 </script>
 
 <template>
-  <Button variant="text" @click="toggleNav()"><MenuIcon class="w-6 h-6 text-app-primary-500" /></Button>
-
   <div
     :class="{ hidden: !showNav }"
     class="fixed bg-app-gray-900 opacity-40 inset-0 z-20"

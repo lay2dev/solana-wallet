@@ -39,14 +39,15 @@ const isAlnum = (value: string): boolean => {
   return /^[a-zA-Z0-9]+$/.test(value);
 };
 
-const defaultImportToken: CustomTokenInfo = {
+const defaultImportToken: CustomTokenInfo & { decimals: number } = {
   address: "",
   symbol: "",
   name: "",
   publicAddress: "",
   network: "",
+  decimals: 0,
 };
-const importTokenState = reactive<CustomTokenInfo>(defaultImportToken);
+const importTokenState = reactive<CustomTokenInfo & { decimals: number }>(defaultImportToken);
 
 const rules = {
   address: {
@@ -57,6 +58,9 @@ const rules = {
   symbol: {
     required: helpers.withMessage("Required", required),
   },
+  decimals: {
+    required: helpers.withMessage("Required", required),
+  },
   name: {
     required: helpers.withMessage("Required", required),
   },
@@ -64,15 +68,16 @@ const rules = {
 
 const $v = useVuelidate(rules, importTokenState);
 
-function setImportTokenState(contractAddress: string, name: string, symbol: string, setEmpty = false) {
+function setImportTokenState(contractAddress: string, name: string, symbol: string, decimals: number, setEmpty = false) {
   (importTokenState.address as string) = setEmpty || contractAddress ? contractAddress : importTokenState.address;
   (importTokenState.name as string) = setEmpty || name ? name : importTokenState.name;
   (importTokenState.symbol as string) = setEmpty || symbol ? symbol : importTokenState.symbol;
+  (importTokenState.decimals as number) = setEmpty || decimals ? decimals : importTokenState.decimals;
 }
 
 function resetState() {
-  setImportTokenState("", "", "", true);
-  $v.value.$rese$t();
+  setImportTokenState("", "", "", 0, true);
+  // $v.value.$rese$t();
 }
 
 const onCancel = () => {
@@ -125,6 +130,10 @@ const refDiv = ref(null);
                 <div class="col-span-3 sm:col-span-2">
                   <div class="text-sm text-app-text-500 dark:text-app-text-dark-600 mb-1">Token Symbol</div>
                   <TextField v-model="importTokenState.symbol" :errors="$v.symbol.$errors" />
+                </div>
+                <div class="col-span-3 sm:col-span-2">
+                  <div class="text-sm text-app-text-500 dark:text-app-text-dark-600 mb-1">Token Decimals</div>
+                  <TextField v-model="importTokenState.decimals" type="number" :errors="$v.decimals.$errors" />
                 </div>
                 <div class="col-span-3 sm:col-span-2">
                   <div class="text-sm text-app-text-500 dark:text-app-text-dark-600 mb-1">Token Name</div>

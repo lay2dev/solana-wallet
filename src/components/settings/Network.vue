@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import log from "loglevel";
 import { computed, watch } from "vue";
 import { useI18n } from "vue-i18n";
 
@@ -24,6 +25,8 @@ const selectedNetwork = computed({
     if (value) ControllerModule.setNetwork(value.value);
   },
 });
+
+log.info(selectedNetwork.value);
 
 const chainId = computed(() => ControllerModule.torusState.NetworkControllerState.chainId);
 

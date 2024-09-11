@@ -202,7 +202,7 @@ const onEmailLogin = () => {
         :class="isEmbed ? 'mt-4 font-bold continue text-base' : 'mt-3'"
         :block="true"
         type="submit"
-        >{{ t("dappLogin.continue", { verifier: t("loginCountry.email") }) }}</Button
+        >{{ t("dappLogin.continue", { verifier: "Email" }) }}</Button
       >
     </form>
   </div>

@@ -4,7 +4,6 @@ export function trackUserClick(payload: string) {
   event("user_clicks", { clicked_on: payload });
 }
 export const googleAnalyticsDirective = {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   created(el: any, binding: any) {
     el.addEventListener("click", () => {
       trackUserClick(binding.value);

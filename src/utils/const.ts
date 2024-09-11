@@ -5,7 +5,7 @@ export const WALLET_SUPPORTED_NETWORKS: { [key: string]: ProviderConfig } = {
   ...SUPPORTED_NETWORKS,
   mainnet: {
     ...SUPPORTED_NETWORKS.mainnet,
-    rpcTarget: "https://omniscient-fabled-pool.solana-mainnet.quiknode.pro/c07218c84ba51cac60d68e60364f24225bd5e972",
+    rpcTarget: "https://lingering-proportionate-shape.solana-mainnet.quiknode.pro/333c99a51827513e9f2ee5ebd8154716724eb350",
     // rpcTarget: "https://nyc39.rpcpool.com",
   },
   testnet: {
@@ -14,7 +14,7 @@ export const WALLET_SUPPORTED_NETWORKS: { [key: string]: ProviderConfig } = {
   },
   devnet: {
     ...SUPPORTED_NETWORKS.devnet,
-    rpcTarget: "https://misty-lively-lambo.solana-devnet.quiknode.pro/cc27b365f0921950469287299c1491d302182c69",
+    rpcTarget: "https://solana-devnet.g.alchemy.com/v2/4dmJWhOKFGHJH_586DhFzon5CLEJUdU5",
   },
   invalid: {
     ...SUPPORTED_NETWORKS.devnet,
@@ -22,6 +22,9 @@ export const WALLET_SUPPORTED_NETWORKS: { [key: string]: ProviderConfig } = {
     chainId: "loading",
   },
 };
+
+export const solagramApiUrl = process.env.NODE_ENV === "development" ? "https://dev.solagram.com" : "https://solagram.com";
+export const solagramVerifier = process.env.NODE_ENV === "development" ? "solagram-mainnet" : "solagram-mainnet-prod";
 
 // testnet: {
 //   blockExplorerUrl: "?cluster=testnet",

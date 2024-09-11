@@ -99,7 +99,6 @@ export const getRelaySigned = async (gaslessHost: string, signedTx: string, bloc
 };
 
 export const getUserLanguage = (): string => {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let userLanguage = (window.navigator as any).userLanguage || window.navigator.language || "en-US";
   userLanguage = userLanguage.split("-");
   userLanguage = userLanguage[0] || LOCALE_EN;
@@ -110,7 +109,6 @@ export function delay(ms: number) {
   return new Promise<void>((resolve) => setTimeout(() => resolve(), ms));
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function setFallbackImg(target: any, src: string) {
   // eslint-disable-next-line no-param-reassign
   (target as { src: string }).src = src;

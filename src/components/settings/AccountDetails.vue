@@ -33,7 +33,7 @@ const refDiv = ref(null);
     @keydown="openModal"
   >
     <KeyIcon class="w-5 h-5 mr-5" />
-    <div>{{ $t("walletSettings.accountDetails") }}</div>
+    <div>{{ "Account Details" }}</div>
   </div>
   <TransitionRoot appear :show="isOpen" as="template">
     <Dialog :open="isOpen" :class="{ dark: ControllerModule.isDarkMode }" as="div" :initial-focus="refDiv" @close="closeModal">
@@ -60,12 +60,12 @@ const refDiv = ref(null);
                 as="h3"
                 class="text-lg font-bold leading-6 text-app-text-500 dark:text-app-text-dark-400 focus-within:outline-none"
                 tabindex="0"
-                >{{ $t("walletSettings.privateKey") }}</DialogTitle
+                >{{ "PrivateKey" }}</DialogTitle
               >
               <div class="mt-5 flex items-center">
                 <div class="flex items-center text-app-text-400 dark:text-app-text-dark-500">
                   <KeyIcon class="w-5 h-5 mr-3" />
-                  <div class="font-medium">{{ $t("walletSettings.showPrivateKey") }}</div>
+                  <div class="font-medium">{{ "Show Private Key" }}</div>
                 </div>
                 <div class="ml-auto">
                   <Button variant="text" @click="isKeyShown = !isKeyShown">
@@ -78,12 +78,12 @@ const refDiv = ref(null);
                 <div class="text-xs text-app-text-500 dark:text-app-text-dark-600 mr-2 priv-key">{{ key }}</div>
                 <Button variant="text" @click="copyPrivKey()">
                   <CopyIcon class="w-4 h-4 mr-1" />
-                  {{ $t("walletSettings.clickCopy") }}
+                  {{ "Copy" }}
                 </Button>
               </div>
 
               <div class="mt-8">
-                <Button class="ml-auto" variant="tertiary" @click="closeModal">{{ $t("walletSettings.close") }}</Button>
+                <Button class="ml-auto" variant="tertiary" @click="closeModal">{{ "Close" }}</Button>
               </div>
             </div>
           </TransitionChild>

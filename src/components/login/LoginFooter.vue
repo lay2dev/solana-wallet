@@ -28,16 +28,6 @@ const { t } = useI18n();
   <div class="inset-0 flex items-center mt-4 mb-1" aria-hidden="true">
     <div class="w-full border-t border-gray-300" />
   </div>
-
-  <div class="space-x-3">
-    <a class="text-xs text-app-primary-500" href="https://docs.tor.us/legal/terms-and-conditions" target="_blank" rel="noopener noreferrer">{{
-      t("dappLogin.termsConditions")
-    }}</a>
-    <a class="text-xs text-app-primary-500" href="https://docs.tor.us/legal/privacy-policy" target="_blank" rel="noopener noreferrer">{{
-      t("dappLogin.privacyPolicy")
-    }}</a>
-    <a class="text-xs text-app-primary-500" href="https://t.me/TorusLabs" target="_blank" rel="noopener noreferrer">{{ t("dappLogin.contactUs") }}</a>
-  </div>
 </template>
 
 <style scoped></style>

@@ -71,8 +71,13 @@ import {
   TokensTrackerController,
   TransactionController,
 } from "@toruslabs/solana-controllers";
+import webApp from "@twa-dev/sdk";
+import Web3Auth from "@web3auth/node-sdk";
+import { SolanaPrivateKeyProvider, SolanaWallet } from "@web3auth/solana-provider";
+import axios from "axios";
+// import axios from "axios";
 import { BigNumber } from "bignumber.js";
-import base58 from "bs58";
+import bs58 from "bs58";
 import { ethErrors } from "eth-rpc-errors";
 import { cloneDeep, omit } from "lodash-es";
 import log from "loglevel";
@@ -80,11 +85,10 @@ import pump from "pump";
 import { Duplex } from "readable-stream";
 
 import OpenLoginFactory, { createSession, updateSession } from "@/auth/OpenLogin";
-import OpenLoginHandler from "@/auth/OpenLoginHandler";
 import config from "@/config";
 import { topupPlugin } from "@/plugins/Topup";
 import { bonfidaResolve } from "@/utils/bonfida";
-import { WALLET_SUPPORTED_NETWORKS } from "@/utils/const";
+import { solagramApiUrl, solagramVerifier, WALLET_SUPPORTED_NETWORKS } from "@/utils/const";
 import {
   BUTTON_POSITION,
   CONTROLLER_MODULE_KEY,
@@ -96,13 +100,14 @@ import {
 } from "@/utils/enums";
 import { getRandomWindowId, getUserLanguage, isMain, normalizeJson } from "@/utils/helpers";
 import { constructTokenData } from "@/utils/instructionDecoder";
+import { SOLANA_PRIVATEKEY_PROVIDER_CONFIG, WEB3_AUTH_CONFIG } from "@/utils/solanaContants";
 import { burnAndCloseAccount } from "@/utils/solanaHelpers";
 import TorusStorageLayer from "@/utils/tkey/storageLayer";
 import { TOPUP } from "@/utils/topup";
 
 import { PKG } from "../const";
+import { TokenListStorage } from "../utils/storage";
 
-const TARGET_NETWORK = "mainnet";
 const SOL_TLD_AUTHORITY = new PublicKey("58PwtjSDuFHuUkYjH9BYnnQKHfwo9reZhC2zMJv9JPkx");
 
 export const DEFAULT_CONFIG = {
@@ -112,7 +117,7 @@ export const DEFAULT_CONFIG = {
     supportedCurrencies: config.supportedCurrencies,
   } as SolanaCurrencyControllerConfig,
   NetworkControllerConfig: {
-    providerConfig: WALLET_SUPPORTED_NETWORKS[TARGET_NETWORK],
+    providerConfig: WALLET_SUPPORTED_NETWORKS.mainnet,
   },
   PreferencesControllerConfig: {
     pollInterval: 180_000,
@@ -146,7 +151,7 @@ export const DEFAULT_STATE = {
   NetworkControllerState: {
     chainId: "loading",
     properties: {},
-    providerConfig: WALLET_SUPPORTED_NETWORKS[TARGET_NETWORK],
+    providerConfig: WALLET_SUPPORTED_NETWORKS.mainnet,
     network: "loading",
     isCustomNetwork: false,
   },
@@ -185,6 +190,11 @@ export const DEFAULT_STATE = {
   RelayKeyHostMap: {},
   UserDapp: new Map(),
 };
+
+const sleep = (ms: number) =>
+  new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
 
 export const EPHERMAL_KEY = `${CONTROLLER_MODULE_KEY}-ephemeral`;
 
@@ -338,16 +348,18 @@ export default class TorusController extends BaseController<TorusControllerConfi
     // overwrite google node with default node
     // overwrite custom node with default node when isMain is True
     if ((isMain && initialState.NetworkControllerState?.isCustomNetwork) || !initialState.NetworkControllerState?.isCustomNetwork) {
-      let defaultNetwork = WALLET_SUPPORTED_NETWORKS.mainnet;
+      const defaultNetwork = WALLET_SUPPORTED_NETWORKS.mainnet;
       if (initialState.NetworkControllerState) {
-        if (initialState.NetworkControllerState.providerConfig.chainId === "0x2") defaultNetwork = WALLET_SUPPORTED_NETWORKS.testnet;
-        if (initialState.NetworkControllerState.providerConfig.chainId === "0x3") defaultNetwork = WALLET_SUPPORTED_NETWORKS.devnet;
+        // if (initialState.NetworkControllerState.providerConfig.chainId === "0x2") defaultNetwork = WALLET_SUPPORTED_NETWORKS.testnet;
+        // if (initialState.NetworkControllerState.providerConfig.chainId === "0x3") defaultNetwork = WALLET_SUPPORTED_NETWORKS.devnet;
         initialState.NetworkControllerState.providerConfig = defaultNetwork;
-        log.info("unsupported api.google rpc endpoint, replaced with default rpc endpoint");
+        log.info(defaultNetwork, "default network");
       }
     }
 
-    this.storageLayer = new TorusStorageLayer({ hostUrl: config.openloginStateAPI });
+    this.storageLayer = new TorusStorageLayer({
+      hostUrl: config.openloginStateAPI,
+    });
     // BaseController methods
     this.initialize();
     this.configure(_config, true, true);
@@ -542,14 +554,42 @@ export default class TorusController extends BaseController<TorusControllerConfi
     this.tokenInfoController.setTokenLoadingState();
   }
 
-  async importCustomToken(token: CustomTokenInfo) {
+  getTokenLoadingState() {
+    const storage = new TokenListStorage();
+
+    return storage.getTokenList();
+  }
+
+  async importCustomToken(token: CustomTokenInfo & { decimals: number }) {
     try {
       token.publicAddress = this.selectedAddress;
       token.network = this.currentNetworkName;
-      const result = await this.tokenInfoController.importCustomToken(token);
-      const tokenList = this.tokensTracker.state.tokens ? this.tokensTracker.state.tokens[this.selectedAddress] : [];
-      if (tokenList?.length) await this.tokenInfoController.updateTokenInfoMap(tokenList, true);
-      return result;
+
+      const _token: SolanaToken = {
+        tokenAddress: token.address,
+        mintAddress: token.address,
+        balance: {
+          amount: "0",
+          uiAmount: 0,
+          decimals: token.decimals,
+          uiAmountString: "0",
+        },
+        data: {
+          chainId: 1,
+          name: token.name,
+          symbol: token.symbol,
+          decimals: token.decimals,
+          address: token.address,
+        },
+        isFungible: true,
+      };
+
+      const storage = new TokenListStorage();
+
+      const tokens = [...storage.getTokenList(), _token];
+
+      if (tokens?.length) await this.tokenInfoController.updateTokenInfoMap(tokens, true);
+      storage.addToken(_token);
     } catch (err) {
       log.error(err);
       throw new Error("Unable to import token", err as Error);
@@ -609,6 +649,7 @@ export default class TorusController extends BaseController<TorusControllerConfi
     try {
       await signedTransaction.result;
     } catch (e) {
+      log.info("error while submitting transaction", e);
       throw ethErrors.provider.userRejectedRequest((e as Error).message);
     }
 
@@ -681,7 +722,7 @@ export default class TorusController extends BaseController<TorusControllerConfi
         .slice(0, 64);
     } catch (e1) {
       try {
-        pKey = Buffer.from(base58.decode(privKey)).toString("hex").slice(0, 64);
+        pKey = Buffer.from(bs58.decode(privKey)).toString("hex").slice(0, 64);
       } catch (e2) {
         pKey = privKey;
       }
@@ -690,12 +731,15 @@ export default class TorusController extends BaseController<TorusControllerConfi
   }
 
   async addAccount(privKey: string, userInfo?: UserInfo, rehydrate?: boolean): Promise<string> {
-    const address = this.keyringController.importKeyring(base58.decode(privKey));
+    const address = this.keyringController.importKeyring(bs58.decode(privKey));
     if (userInfo) {
       // try catch to prevent breaking login flow
       try {
         // omit address's preferences state on login (the jwt might be expired)
-        this.preferencesController.update({ identities: omit(this.preferencesController.state.identities, address), selectedAddress: "" });
+        this.preferencesController.update({
+          identities: omit(this.preferencesController.state.identities, address),
+          selectedAddress: "",
+        });
         await this.preferencesController.initPreferences({
           address,
           calledFromEmbed: !isMain,
@@ -1237,30 +1281,86 @@ export default class TorusController extends BaseController<TorusControllerConfi
   }): Promise<OpenLoginPopupResponse> {
     log.info(waitSaving);
     try {
-      const extraLoginOptions: Record<string, string> = {
-        dappOrigin: this.origin,
+      log.info(loginProvider);
+      const tgUser = webApp.initDataUnsafe;
+
+      const accounts_str = localStorage.getItem("telegram_solana_accounts");
+      let accounts_id_token = localStorage.getItem("telegram_solana_id_token") || "";
+      let accounts: any;
+
+      if (accounts_str && accounts_id_token) {
+        await sleep(500);
+        accounts = JSON.parse(accounts_str);
+      } else {
+        const { data } = await axios.post(`${solagramApiUrl}/solagram/api/v1/user/auth`, tgUser);
+
+        const idToken = data.data.jwt;
+        const userId = tgUser.user!.id || 0;
+        const web3auth = new Web3Auth(WEB3_AUTH_CONFIG);
+
+        const solanaPrivateProvider = new SolanaPrivateKeyProvider(SOLANA_PRIVATEKEY_PROVIDER_CONFIG);
+
+        web3auth.init({ provider: solanaPrivateProvider });
+
+        const web3authNodeProvider = await web3auth.connect({
+          verifier: solagramVerifier,
+          verifierId: userId.toString(),
+          idToken,
+        });
+
+        const privateKey = await web3authNodeProvider!.request<string, string>({
+          method: "solanaPrivateKey",
+        });
+
+        const solanaWallet = new SolanaWallet(web3authNodeProvider!);
+
+        // Get user's Solana public address
+        const accounts_0 = await solanaWallet.requestAccounts();
+
+        const privateKeyUint8 = new Uint8Array(Buffer.from(privateKey || "0x", "hex"));
+
+        accounts_id_token = idToken;
+
+        accounts = [
+          {
+            address: accounts_0[0],
+            app: `Telegram ${tgUser.user?.username}`,
+            name: tgUser.user?.username || "",
+            privKey: privateKey || "",
+            solanaPrivKey: bs58.encode(privateKeyUint8),
+          },
+        ];
+
+        localStorage.setItem("telegram_solana_accounts", JSON.stringify(accounts));
+        localStorage.setItem("telegram_solana_id_token", idToken);
+      }
+
+      const userInfo = {
+        aggregateVerifier: solagramVerifier,
+        appState: "",
+        dappShare: "",
+        email: "",
+        idToken: accounts_id_token,
+        isMfaEnabled: false,
+        name: tgUser.user?.username || "",
+        oAuthAccessToken: "",
+        oAuthIdToken: "",
+        profileImage: tgUser.user?.photo_url || "",
+        typeOfLogin: "telefram",
+        verifier: "torus",
+        verifierId: tgUser.user?.username || "",
       };
-      if (login_hint) extraLoginOptions.login_hint = login_hint;
 
-      const handler = new OpenLoginHandler({
-        loginProvider,
-        extraLoginOptions,
-      });
-      const result = await handler.handleLoginWindow({
-        communicationEngine: this.communicationEngine,
-        communicationWindowManager: this.communicationManager,
-      });
-      const { userInfo, accounts } = result;
-
+      log.info(accounts);
+      log.info(userInfo);
       // if iframe (Dapp), only populate selected account only.
       // index 0 is the selected account
       // const targetAccount = isMain ? accounts : accounts.filter((account) => account.privKey === privKey);
       const targetAccount = isMain ? accounts : [accounts[0]];
       if (targetAccount.length === 0) throw new Error("Login Error");
 
-      // populate account
       const userDapp = new Map();
-      const accountPromise = targetAccount.map((account) => {
+      const accountPromise = targetAccount.map((account: any) => {
         userDapp.set(account.address, account.app);
         return this.addAccount(account.solanaPrivKey, userInfo as UserInfo);
       });
@@ -1273,7 +1373,7 @@ export default class TorusController extends BaseController<TorusControllerConfi
       if (!this.hasSelectedPrivateKey || !this.privateKey) throw new Error("Wallet Error: Invalid private key ");
 
       this.emit("LOGIN_RESPONSE", null, address);
-      return result;
+      return { accounts, userInfo, privKey: "", sessionId: "" };
     } catch (error) {
       this.emit("LOGIN_RESPONSE", (error as Error)?.message);
       log.error(error);
@@ -1340,7 +1440,9 @@ export default class TorusController extends BaseController<TorusControllerConfi
     });
     this.communicationEngine?.emit("notification", {
       method: COMMUNICATION_NOTIFICATIONS.USER_LOGGED_IN,
-      params: { currentLoginProvider: this.getAccountPreferences(this.selectedAddress)?.userInfo.typeOfLogin || "" },
+      params: {
+        currentLoginProvider: this.getAccountPreferences(this.selectedAddress)?.userInfo.typeOfLogin || "",
+      },
     });
     return accounts;
   }
@@ -1364,7 +1466,10 @@ export default class TorusController extends BaseController<TorusControllerConfi
     const allTransactions = req.params?.message?.map((msg) => {
       if (req.params?.messageOnly) {
         const signature = this.keyringController.signMessage(Buffer.from(msg as string, "hex"), this.selectedAddress);
-        return JSON.stringify({ publicKey: this.selectedAddress, signature: Buffer.from(signature).toString("hex") });
+        return JSON.stringify({
+          publicKey: this.selectedAddress,
+          signature: Buffer.from(signature).toString("hex"),
+        });
       }
 
       // Fallback to whole tx
@@ -1565,7 +1670,7 @@ export default class TorusController extends BaseController<TorusControllerConfi
 
     if (!this.hasSelectedPrivateKey) throw new Error("Waller Error");
 
-    const privateKey = Buffer.from(base58.decode(req.params?.privateKey)).toString("hex");
+    const privateKey = Buffer.from(bs58.decode(req.params?.privateKey)).toString("hex");
 
     const openLoginHandler = await OpenLoginFactory.getInstance();
     const { sessionId: openloginSessionId, state: openloginState } = openLoginHandler;

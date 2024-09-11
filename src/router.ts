@@ -140,6 +140,18 @@ const router = createRouter({
       meta: { title: "Sign Message" },
     },
     {
+      name: "confirm_connect",
+      path: "/confirm_connect",
+      component: () => import(/* webpackPrefetch: true */ /* webpackChunkName: "CONFIRM_CONNECT" */ "@/pages/ConfirmConnect.vue"),
+      meta: { title: "Connect" },
+    },
+    {
+      name: "confirm_transaction",
+      path: "/confirm_transaction",
+      component: () => import(/* webpackPrefetch: true */ /* webpackChunkName: "CONFIRM_TRANSACTION" */ "@/pages/ConfirmSignTransaction.vue"),
+      meta: { title: "Sign Transaction" },
+    },
+    {
       name: "redirect",
       path: "/redirect",
       component: () => import(/* webpackPrefetch: true */ /* webpackChunkName: "REDIRECT_HANDLER" */ "@/pages/RedirectHandler.vue"),
@@ -150,13 +162,6 @@ const router = createRouter({
       path: "/providerchange",
       component: () => import(/* webpackPrefetch: true */ /* webpackChunkName: "PROVIDER_CHANGE" */ "@/pages/ProviderChange.vue"),
       meta: { title: "ProviderChange" },
-    },
-    // EMBED IFRAME ROUTE
-    {
-      name: "frame",
-      path: "/frame",
-      component: () => import(/* webpackPrefetch: true */ /* webpackChunkName: "FRAME" */ "@/pages/Frame.vue"),
-      meta: { title: "Frame" },
     },
     // REDIRECTFLOW ROUTES
     {

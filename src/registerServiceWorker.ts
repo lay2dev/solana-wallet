@@ -81,19 +81,24 @@ function checkValidServiceWorker(swUrl: string, config?: Config) {
       if (response.status === 404 || (contentType != null && contentType.indexOf("javascript") === -1)) {
         // No service worker found. Probably a different app. Reload the page.
 
-        return navigator.serviceWorker.ready
-          .then((registration) => {
-            return registration.unregister();
-          })
-          .then(() => {
-            if (window && isMain && !window.loginInProgress) {
-              window.location.reload();
-            }
-            return undefined;
-          })
-          .catch((error) => {
-            log.warn("Error during service worker unregistration:", error);
-          });
+        return (
+          navigator.serviceWorker.ready
+            // eslint-disable-next-line promise/no-nesting
+            .then((registration) => {
+              return registration.unregister();
+            })
+            // eslint-disable-next-line promise/no-nesting
+            .then(() => {
+              if (window && isMain && !window.loginInProgress) {
+                window.location.reload();
+              }
+              return undefined;
+            })
+            // eslint-disable-next-line promise/no-nesting
+            .catch((error) => {
+              log.warn("Error during service worker unregistration:", error);
+            })
+        );
       }
       // Service worker found. Proceed as normal.
       return registerValidSW(swUrl, config);

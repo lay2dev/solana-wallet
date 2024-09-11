@@ -49,13 +49,6 @@ export const retrieveNftOwner = async (connection: Connection, nameAccount: Publ
   }
 };
 
-/**
- * This function can be used to verify the validity of a SOL record
- * @param record The record data to verify
- * @param signedRecord The signed data
- * @param pubkey The public key of the signer
- * @returns
- */
 export const checkSolRecord = (record: Uint8Array, signedRecord: Uint8Array, pubkey: PublicKey) => {
   return nacl.sign.detached.verify(record, signedRecord, pubkey.toBytes());
 };

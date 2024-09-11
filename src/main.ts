@@ -12,7 +12,6 @@ import { applyWhiteLabelColors } from "@/utils/whitelabel";
 
 import { i18n } from "./plugins/i18nPlugin";
 import * as serviceWorker from "./registerServiceWorker";
-import { installSentry } from "./sentry";
 import store from "./store";
 
 const { VUE_APP_GA_ID, NODE_ENV } = process.env;
@@ -40,7 +39,6 @@ if (NODE_ENV === "production") {
   );
 }
 applyWhiteLabelColors();
-installSentry(vue);
 vue.mount("#app");
 serviceWorker.register({
   onUpdate: (registration) => {

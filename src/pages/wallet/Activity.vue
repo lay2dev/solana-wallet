@@ -10,7 +10,6 @@ import ControllerModule from "@/modules/controllers";
 const ACTIVITY_ACTION_ALL = "walletActivity.allTransactions";
 const ACTIVITY_ACTION_SEND = "walletActivity.send";
 const ACTIVITY_ACTION_RECEIVE = "walletActivity.receive";
-const ACTIVITY_ACTION_TOPUP = "walletActivity.topup";
 
 const ACTIVITY_PERIOD_ALL = "walletActivity.all";
 const ACTIVITY_PERIOD_WEEK_ONE = "walletActivity.lastOneWeek";
@@ -31,10 +30,6 @@ const actionTypes = [
   {
     value: ACTIVITY_ACTION_RECEIVE,
     label: t(ACTIVITY_ACTION_RECEIVE),
-  },
-  {
-    value: ACTIVITY_ACTION_TOPUP,
-    label: t(ACTIVITY_ACTION_TOPUP),
   },
 ];
 

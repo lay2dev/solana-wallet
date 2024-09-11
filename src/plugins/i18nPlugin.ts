@@ -5,9 +5,8 @@ import { nextTick } from "vue";
 import { Composer, createI18n, I18n, VueI18n } from "vue-i18n";
 
 import { LOCALE_EN } from "@/utils/enums";
-import { getUserLanguage } from "@/utils/helpers";
 
-export const localeTarget = getUserLanguage() || LOCALE_EN;
+export const localeTarget = LOCALE_EN;
 export const languageMap: Record<string, string> = {
   en: "english",
   de: "german",

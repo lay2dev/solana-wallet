@@ -50,7 +50,8 @@ class OpenLoginFactory {
   }
 
   public static async computeAccount() {
-    const instance = await OpenLoginFactory.getInstance();
+    const instance = await OpenLoginFactory.getInstance(true);
+    log.info(instance);
     if (!instance || !instance.state.sessionId) {
       throw new Error("Openlogin instance/session not found");
     }

@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable class-methods-use-this */
 import { NameRegistryState } from "@solana/spl-name-service";
 import { LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
@@ -27,7 +26,14 @@ import {
 import { BroadcastChannel } from "@toruslabs/broadcast-channel";
 import { BasePostMessageStream } from "@toruslabs/openlogin-jrpc";
 import { LOGIN_PROVIDER_TYPE, storageAvailable } from "@toruslabs/openlogin-utils";
-import { ExtendedAddressPreferences, LoadingState, NFTInfo, SolanaToken, SolanaTransactionActivity } from "@toruslabs/solana-controllers";
+import {
+  CustomTokenInfo,
+  ExtendedAddressPreferences,
+  LoadingState,
+  NFTInfo,
+  SolanaToken,
+  SolanaTransactionActivity,
+} from "@toruslabs/solana-controllers";
 import { BigNumber } from "bignumber.js";
 import { cloneDeep, merge } from "lodash-es";
 import log from "loglevel";
@@ -43,6 +49,8 @@ import { WALLET_SUPPORTED_NETWORKS } from "@/utils/const";
 import { CONTROLLER_MODULE_KEY, LOCAL_STORAGE_KEY, TorusControllerState } from "@/utils/enums";
 import { delay, getUserLanguage, isMain } from "@/utils/helpers";
 import { NAVBAR_MESSAGES } from "@/utils/messages";
+import { SolanaWalletParams } from "@/utils/miniAppStartParam";
+import { getSplTokenBalances, TokenListStorage } from "@/utils/storage";
 import { isWhiteLabelDark, isWhiteLabelSet } from "@/utils/whitelabel";
 
 import store from "../store";
@@ -67,6 +75,14 @@ class ControllerModule extends VuexModule {
   public logoutRequired = false;
 
   public rehydrating = false;
+
+  public solanaParams: SolanaWalletParams = {
+    method: "signMessage",
+    data: "",
+    nonce: "",
+  };
+
+  public slpTokenss: SolanaToken[] = [];
 
   get isRehydrating(): boolean {
     return this.rehydrating;
@@ -186,7 +202,7 @@ class ControllerModule extends VuexModule {
     const selectedCurrency = this.torusState.CurrencyControllerState.currentCurrency;
     balance = balance.plus(
       this.fungibleTokens.reduce((sum, curr) => {
-        return sum.plus(new BigNumber((curr.balance?.uiAmount ?? 0) * (curr?.price?.[selectedCurrency.toLowerCase()] ?? 0)));
+        return sum.plus(new BigNumber((curr.balance?.uiAmount || 0) * (curr?.price?.[selectedCurrency.toLowerCase()] || 0)));
       }, new BigNumber(0))
     );
     // const pricePerToken = this.torusState.CurrencyControllerState.conversionRate;
@@ -283,6 +299,11 @@ class ControllerModule extends VuexModule {
   }
 
   @Mutation
+  public setSolanaParams(params: SolanaWalletParams) {
+    this.solanaParams = params;
+  }
+
+  @Mutation
   public setLogoutRequired(status: boolean) {
     this.logoutRequired = status;
   }
@@ -295,6 +316,76 @@ class ControllerModule extends VuexModule {
   @Mutation
   public updateTorusState(state: TorusControllerState): void {
     this.torusState = { ...state };
+  }
+
+  @Mutation
+  public async importCustomToken(token: CustomTokenInfo & { decimals: number }) {
+    try {
+      const storage = new TokenListStorage();
+
+      const localTokens = storage.getTokenList();
+
+      const existToken = localTokens.find((t) => t.mintAddress === token.address);
+      if (existToken) {
+        return;
+      }
+      const tokenIn: SolanaToken = {
+        tokenAddress: token.address,
+        mintAddress: token.address,
+        balance: {
+          amount: "0",
+          uiAmount: 0,
+          decimals: token.decimals,
+          uiAmountString: "0",
+        },
+        data: {
+          chainId: 1,
+          name: token.name,
+          symbol: token.symbol,
+          decimals: token.decimals,
+          address: token.address,
+        },
+        isFungible: true,
+      };
+
+      const tokens = [...localTokens, tokenIn];
+
+      if (tokens?.length) {
+        this.slpTokenss = tokens;
+      }
+      storage.addToken(tokenIn);
+
+      const balances = await getSplTokenBalances(
+        tokens.map((t) => t.mintAddress),
+        torus.selectedAddress
+      );
+
+      const slpTokens: any = tokens.map((token_1: any) => {
+        const balance = balances.get(token_1.mintAddress) ? balances.get(token_1.mintAddress) : BigInt(0);
+
+        const uiAmount = balance ? Number(balance) / 10 ** (token_1.data?.decimals || 0) : 0;
+
+        return {
+          ...token_1,
+          balance: {
+            amount: balance?.toString(),
+            uiAmount,
+            decimals: token_1.data?.decimals || 0,
+            uiAmountString: uiAmount.toString(),
+          },
+        };
+      });
+
+      this.slpTokenss = slpTokens;
+    } catch (err) {
+      log.error(err);
+      throw new Error("Unable to import token", err as Error);
+    }
+  }
+
+  @Mutation
+  updateSlpTokenss(tokens: SolanaToken[]) {
+    this.slpTokenss = tokens;
   }
 
   @Action
@@ -461,12 +552,8 @@ class ControllerModule extends VuexModule {
     });
     // torus.setupUntrustedCommunication();
     // Good
-    torus.on(TX_EVENTS.TX_UNAPPROVED, async ({ txMeta, req }) => {
-      if (isMain) {
-        torus.approveSignTransaction(txMeta.id);
-      } else {
-        await torus.handleTransactionPopup(txMeta.id, req);
-      }
+    torus.on(TX_EVENTS.TX_UNAPPROVED, async ({ txMeta }) => {
+      torus.approveSignTransaction(txMeta.id);
     });
 
     torus.on("logout", () => {
@@ -517,7 +604,6 @@ class ControllerModule extends VuexModule {
     waitSaving?: boolean;
   }): Promise<void> {
     this.setLogoutRequired(false);
-    // do not need to restore beyond login
     await torus.triggerLogin({ loginProvider, login_hint, waitSaving });
   }
 
@@ -553,7 +639,10 @@ class ControllerModule extends VuexModule {
       // prevent network state reseted during logout due to failed restoration
       torus.init({
         _config: cloneDeep(DEFAULT_CONFIG),
-        _state: { ...initialState, NetworkControllerState: cloneDeep(this.torusState.NetworkControllerState) },
+        _state: {
+          ...initialState,
+          NetworkControllerState: cloneDeep(this.torusState.NetworkControllerState),
+        },
       });
     }
 
@@ -699,7 +788,12 @@ class ControllerModule extends VuexModule {
         await delay(15000);
         res =
           this.nonFungibleTokens?.map((token: SolanaToken) => {
-            return { balance: token.balance, mint: token.mintAddress, name: token.metaplexData?.name, uri: token.metaplexData?.uri };
+            return {
+              balance: token.balance,
+              mint: token.mintAddress,
+              name: token.metaplexData?.name,
+              uri: token.metaplexData?.uri,
+            };
           }) || [];
         break;
       default:

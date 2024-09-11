@@ -4,13 +4,13 @@ import { computed, ref } from "vue";
 import SolanaLogoURL from "@/assets/solana-dark.svg";
 import SolanaLightLogoURL from "@/assets/solana-light.svg";
 import { AccountMenu, AccountMenuList, AccountMenuMobile } from "@/components/nav";
-import { requireLoggedIn } from "@/modules/auth";
+// import { requireLoggedIn } from "@/modules/auth";
 import ControllerModule from "@/modules/controllers";
 import { i18n, setLocale } from "@/plugins/i18nPlugin";
 import { NAVIGATION_LIST } from "@/utils/navHelpers";
 import { getWhiteLabelLocale, getWhiteLabelLogoDark, getWhiteLabelLogoLight, isWhiteLabelSet } from "@/utils/whitelabel";
 
-requireLoggedIn();
+// requireLoggedIn();
 
 setLocale(i18n, isWhiteLabelSet() ? getWhiteLabelLocale() : ControllerModule.locale || (i18n.global.locale as string));
 

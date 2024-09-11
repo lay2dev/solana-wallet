@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import * as Sentry from "@sentry/vue";
 import { onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 
@@ -21,7 +20,6 @@ onMounted(() => {
   setTimeout(() => {
     showRouterChild.value = true;
   });
-  Sentry.setUser({ email: ControllerModule.torus?.userInfo?.email || ControllerModule.torus?.selectedAddress || "unknown" });
 });
 </script>
 <template>

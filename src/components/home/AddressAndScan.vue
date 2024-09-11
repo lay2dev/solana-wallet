@@ -1,10 +1,8 @@
 <script setup lang="ts">
 import { QrcodeIcon } from "@heroicons/vue/solid";
 import { addressSlicer } from "@toruslabs/base-controllers";
-import { ScanIcon } from "@toruslabs/vue-icons/basic";
 import log from "loglevel";
 import { ref } from "vue";
-import { useRouter } from "vue-router";
 
 import WalletIcon from "@/assets/wallet.svg";
 import { HomePageInteractions } from "@/directives/google-analytics";
@@ -13,7 +11,6 @@ import { copyText } from "@/utils/helpers";
 
 import QrcodeDisplay from "./QrcodeDisplay.vue";
 
-const router = useRouter();
 defineProps<{
   selectedAddress: string;
 }>();
@@ -47,14 +44,7 @@ const closeQr = () => {
       <img alt="wallet icon" class="w-3 h-3" :src="WalletIcon" />
       <span class="text-app-text-500 text-xs font-bold">{{ addressSlicer(selectedAddress) }}</span>
     </div>
-    <div
-      class="rounded-full border dark:border-0 h-6 p-2 flex items-center bg-white dark:bg-app-gray-700 text-app-text-500 justify-center cursor-pointer"
-      @click="router.push('/wallet/pay')"
-      @keydown="router.push('/wallet/pay')"
-    >
-      <ScanIcon class="w-4 h-4 mr-2" />
-      <span class="text-app-text-500 text-xs font-bold"> {{ $t("walletHome.scanAndPay") }}</span>
-    </div>
+
     <QrcodeDisplay
       v-if="displayQr"
       :is-open="displayQr"

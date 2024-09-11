@@ -9,15 +9,6 @@ import { SolAndSplToken } from "@/utils/interfaces";
 
 const currency = computed(() => ControllerModule.currentCurrency?.toLocaleLowerCase());
 
-function getUiTokenValue(perTokenPrice: number, tokenAmount: number, subStringLength = 5): number {
-  return parseFloat((perTokenPrice * tokenAmount).toFixed(subStringLength));
-}
-
-const formattedSOLBalance = computed(() => ControllerModule.convertedSolBalance);
-const conversionRate = computed(() => {
-  return ControllerModule.conversionRate;
-});
-
 const props = defineProps<{
   splToken?: Partial<SolAndSplToken>;
   splTokenLoading?: boolean;
@@ -51,28 +42,12 @@ function splClicked() {
           :src="splToken?.iconURL || (ControllerModule.isDarkMode ? SolanaLogoLight : SolanaLogoDark)"
           alt="TOKEN Logo"
         />
-        <p class="text-app-text-600 dark:text-app-text-dark-500 font-bold text-xs leading-3 w-24 truncate">{{ splToken?.name }}</p></span
+        <p class="text-app-text-600 dark:text-app-text-dark-500 font-bold text-xs leading-3 w-24 truncate">
+          {{ splToken?.name || splToken.data?.name }}
+        </p></span
       >
       <p class="font-medium text-xs leading-3 text-right text-app-text-600 dark:text-app-text-dark-500 mr-1 truncate w-20">
-        ~ {{ significantDigits(splToken.balance?.uiAmount || 0, false, 4) }} {{ splToken?.symbol }}
-      </p>
-    </div>
-    <div class="flex flex-row justify-between items-center font-normal text-gray-500 text-xs flex-auto px-4">
-      <p v-if="hasGeckoPrice">
-        1 {{ splToken?.symbol }} ≈
-        {{ !splToken.mintAddress ? conversionRate : (splToken?.price?.[currency === "sol" ? "usd" : currency] || 0).toFixed(3) }}
-        {{ (currency === "sol" ? "usd" : currency).toUpperCase() }}
-      </p>
-      <p v-if="!hasGeckoPrice">
-        {{ $t("homeToken.noRate") }}
-      </p>
-      <p v-if="hasGeckoPrice">
-        ~{{
-          !splToken.mintAddress
-            ? formattedSOLBalance
-            : getUiTokenValue(splToken?.price?.[currency === "sol" ? "usd" : currency] || 0, splToken?.balance?.uiAmount || 0, 3)
-        }}
-        {{ (currency === "sol" ? "usd" : currency).toUpperCase() }}
+        {{ significantDigits(splToken.balance?.uiAmount || 0, false, 4) }} {{ splToken?.symbol }}
       </p>
     </div>
   </div>

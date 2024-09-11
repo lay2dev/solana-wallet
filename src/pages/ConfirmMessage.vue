@@ -1,65 +1,73 @@
 <script setup lang="ts">
-import { BROADCAST_CHANNELS, BroadcastChannelHandler, broadcastChannelOptions, POPUP_RESULT } from "@toruslabs/base-controllers";
-import { BroadcastChannel } from "@toruslabs/broadcast-channel";
+import webApp from "@twa-dev/sdk";
+import axios from "axios";
 import log from "loglevel";
-import { onErrorCaptured, onMounted, reactive, ref } from "vue";
+import { onMounted, reactive, ref } from "vue";
 
 import FullDivLoader from "@/components/FullDivLoader.vue";
 import Permissions from "@/components/permissions/Permissions.vue";
-import { SignMessageChannelDataType } from "@/utils/enums";
-import { openCrispChat } from "@/utils/helpers";
 
-const channel = `${BROADCAST_CHANNELS.TRANSACTION_CHANNEL}_${new URLSearchParams(window.location.search).get("instanceId")}`;
+import ControllerModule, { torus } from "../modules/controllers";
+import { solagramApiUrl } from "../utils/const";
+
 const loading = ref(true);
-
 interface MsgData {
   origin: string;
-  data?: Uint8Array;
   message: string;
 }
 const msg_data = reactive<MsgData>({
   origin: "",
   message: "",
 });
-onErrorCaptured(() => {
-  openCrispChat();
-});
 
 onMounted(async () => {
-  let channel_msg: Partial<SignMessageChannelDataType>;
   try {
-    const bcHandler = new BroadcastChannelHandler(BROADCAST_CHANNELS.TRANSACTION_CHANNEL);
-    channel_msg = await bcHandler.getMessageFromChannel<SignMessageChannelDataType>();
+    const { data } = ControllerModule.solanaParams;
 
-    // TODO: add support to sign array of messages
-    msg_data.data = Buffer.from(channel_msg.data as string, "hex");
-    msg_data.message = (channel_msg.message as string) || "";
-    msg_data.origin = channel_msg.origin as string;
-    loading.value = false;
+    msg_data.message = data || "";
+    msg_data.origin = "https://www.solagram.com/" as string;
   } catch (error) {
     log.error(error, "error in tx");
-    openCrispChat();
   }
+  loading.value = false;
 });
 
 const approveTxn = async (): Promise<void> => {
+  const { nonce } = ControllerModule.solanaParams;
   loading.value = true;
-  const bc = new BroadcastChannel(channel, broadcastChannelOptions);
-  await bc.postMessage({
-    data: { type: POPUP_RESULT, approve: true },
+  const res = await torus.signMessage(
+    {
+      params: {
+        data: Buffer.from(msg_data.message, "hex"),
+      },
+      method: "sign_message",
+    },
+    true
+  );
+  await axios.get(`${solagramApiUrl}/solagram/api/v1/wallet/message`, {
+    params: {
+      nonce,
+      data: Buffer.from(res).toString("hex"),
+    },
   });
-  bc.close();
-};
+  loading.value = false;
 
-const closeModal = async () => {
-  loading.value = true;
-  const bc = new BroadcastChannel(channel, broadcastChannelOptions);
-  await bc.postMessage({ data: { type: POPUP_RESULT, approve: false } });
-  bc.close();
+  log.info({ signature: Buffer.from(res).toString("hex") });
+  webApp.close();
 };
 
 const rejectTxn = async () => {
-  closeModal();
+  loading.value = true;
+  const { nonce } = ControllerModule.solanaParams;
+  await axios.get(`${solagramApiUrl}/solagram/api/v1/wallet/message`, {
+    params: {
+      nonce,
+      data: "",
+      errorCode: 4001,
+      errorMessage: "User Rejected Request",
+    },
+  });
+  webApp.close();
 };
 </script>
 

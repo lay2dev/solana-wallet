@@ -38,7 +38,7 @@ const updateCurrency = (newCurrency: string) => {
   <Card :height="showButtons ? '164px' : undefined">
     <div class="flex w-full justify-between items-center">
       <div class="font-header font-semibold text-app-text-600 dark:text-app-text-dark-500">
-        {{ $t("walletHome.totalValue") }}
+        {{ "Wallet Balance" }}
       </div>
       <NetworkDisplay />
     </div>

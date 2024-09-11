@@ -1,12 +1,8 @@
 import { omit } from "lodash-es";
 
 import MobActivity from "@/assets/mob-activity.svg";
-import MobDiscover from "@/assets/mob-discover.svg";
 import MobHome from "@/assets/mob-home.svg";
-import MobNft from "@/assets/mob-nft.svg";
 import MobSettings from "@/assets/mob-settings.svg";
-
-import { isTopupHidden } from "./whitelabel";
 
 const navList: {
   [key: string]: {
@@ -42,14 +38,6 @@ const navList: {
     mobHidden: true,
     navHidden: true,
   },
-  nfts: {
-    name: "navBar.nfts",
-    title: "navBar.nfts",
-    route: "nfts",
-    icon: MobNft,
-    mobHidden: false,
-    navHidden: false,
-  },
   pay: {
     name: "navBar.pay",
     title: "walletPay.pay",
@@ -74,18 +62,10 @@ const navList: {
     mobHidden: false,
     navHidden: false,
   },
-  discover: {
-    name: "navBar.discover",
-    title: "Discover",
-    route: "discover",
-    icon: MobDiscover,
-    mobHidden: false,
-    navHidden: false,
-  },
 };
 
 function getNavList() {
-  return isTopupHidden() ? omit(navList, "topup") : navList;
+  return omit(navList, "topup");
 }
 
 export const NAVIGATION_LIST = getNavList();

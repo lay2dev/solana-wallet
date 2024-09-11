@@ -1,16 +1,5 @@
 <script setup lang="ts">
-import { VueI18nTranslation } from "vue-i18n";
-
 import Web3AuthLogo from "@/assets/web3auth.svg";
-import { i18n } from "@/plugins/i18nPlugin";
-
-const t = i18n.global.t as VueI18nTranslation;
-
-const footerSupportLinks = [
-  { href: "https://docs.tor.us/legal/terms-and-conditions", translateText: "dappLogin.termsConditions" },
-  { href: "https://docs.tor.us/legal/privacy-policy", translateText: "dappLogin.privacyPolicy" },
-  { href: "https://t.me/TorusLabs", translateText: "dappLogin.contactUs" },
-];
 </script>
 <template>
   <div class="mt-14 mb-2 w-full">
@@ -26,13 +15,5 @@ const footerSupportLinks = [
 
   <div class="inset-0 flex items-center mt-4 mb-1" aria-hidden="true">
     <div class="divider sm:w-full border-t border-gray-300" />
-  </div>
-
-  <div class="space-x-3 mb-14 sm:mb-5">
-    <template v-for="footerSupportLink in footerSupportLinks" :key="footerSupportLink.translateText">
-      <a class="text-xs text-app-primary-500" :href="footerSupportLink.href" target="_blank" rel="noopener noreferrer">{{
-        t(footerSupportLink.translateText)
-      }}</a>
-    </template>
   </div>
 </template>

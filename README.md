@@ -1,4 +1,11 @@
-# Solana Wallet (by Web3Auth)
+# Forked from Solana Wallet (by Web3Auth)
+
+Only make some changes:
+1. Change private key to use web3auth custom verifier.
+2. Add QRCode for receive address shown
+3. Add custom server api to proxy api.tor.us to bypass CORS errors
+
+
 
 Solana Torus Wallet for end-user.
 
